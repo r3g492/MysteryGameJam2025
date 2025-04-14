@@ -56,6 +56,8 @@ func main() {
 			gameCamera.TargetX = player.X + dirX
 			gameCamera.TargetY = player.Y + dirY
 			gameCamera.TargetZ = player.Z + dirZ
+
+			rl.DisableCursor()
 		}
 
 		camera := updateCamera()
