@@ -16,7 +16,7 @@ var (
 
 func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "MysteryGameJam2025")
-	rl.ToggleFullscreen()
+	// rl.ToggleFullscreen()
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
@@ -32,17 +32,13 @@ func main() {
 	for !rl.WindowShouldClose() {
 		if player.Alive {
 			mouseDelta := rl.GetMouseDelta()
-			screenYaw += mouseDelta.X * 0.005
+			screenYaw -= mouseDelta.X * 0.005
 			screenPitch -= mouseDelta.Y * 0.005
 
 			if screenPitch > 1.5 {
 				screenPitch = 1.5
 			} else if screenPitch < -1.5 {
 				screenPitch = -1.5
-			}
-
-			if rl.IsKeyDown(rl.KeyW) {
-				// Movement logic can go here.
 			}
 
 			gameCamera.PositionX = player.X
@@ -61,6 +57,12 @@ func main() {
 		}
 
 		camera := updateCamera()
+
+		if rl.IsKeyDown(rl.KeySpace) {
+			player.Y += 0.01
+		} else if rl.IsKeyDown(rl.KeyLeftControl) {
+			player.Y -= 0.01
+		}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
