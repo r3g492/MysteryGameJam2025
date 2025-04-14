@@ -21,12 +21,13 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	// Create the player and retrieve its pointer/instance.
-	game.CreatePlayer(game.Player{
-		X:     0,
-		Y:     0,
-		Z:     0,
-		Alive: true,
-	})
+	game.CreatePlayer(
+		game.Player{
+			X:     0,
+			Y:     0,
+			Z:     0,
+			Alive: true,
+		})
 	player := game.GetPlayer()
 
 	for !rl.WindowShouldClose() {
@@ -59,9 +60,9 @@ func main() {
 		camera := updateCamera()
 
 		if rl.IsKeyDown(rl.KeySpace) {
-			player.Y += 0.01
+			player.Y += 1
 		} else if rl.IsKeyDown(rl.KeyLeftControl) {
-			player.Y -= 0.01
+			player.Y -= 1
 		}
 
 		rl.BeginDrawing()
