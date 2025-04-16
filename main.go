@@ -25,7 +25,7 @@ func main() {
 			X:         0,
 			Y:         0,
 			Z:         0,
-			MoveSpeed: 0.01,
+			MoveSpeed: 0.05,
 			Alive:     true,
 		})
 	defer game.DeletePlayer()
@@ -64,6 +64,9 @@ func main() {
 		}
 		if rl.IsKeyDown(rl.KeyLeftControl) {
 			player.Y -= 1
+		}
+		if player.Y < 0 {
+			player.Y = 0
 		}
 
 		if rl.IsKeyDown(rl.KeyW) {
