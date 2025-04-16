@@ -1,12 +1,14 @@
 package game
 
 var (
-	gamePlayer Player
+	gamePlayer *Player
 )
 
-func CreatePlayer(
-	player Player,
-) Player {
-	gamePlayer = player
+func CreatePlayer(player Player) *Player {
+	gamePlayer = &player
 	return gamePlayer
+}
+
+func DeletePlayer() {
+	gamePlayer = nil
 }

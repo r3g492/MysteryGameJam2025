@@ -28,6 +28,7 @@ func main() {
 			MoveSpeed: 0.01,
 			Alive:     true,
 		})
+	defer game.DeletePlayer()
 
 	for !rl.WindowShouldClose() {
 		if player.Alive {
@@ -86,12 +87,16 @@ func main() {
 		}
 
 		rl.BeginDrawing()
+		// draw 2d stuffs
 		rl.ClearBackground(rl.RayWhite)
+		drawGradientSky(rl.SkyBlue, rl.White)
+
+		// draw uis
 		rl.DrawFPS(100, 100)
 
 		rl.BeginMode3D(camera)
+		// draw 3d stuffs
 		rl.DrawGrid(100, 100)
-
 		rl.DrawCube(rl.Vector3{X: 0, Y: 0.5, Z: 3}, 1, 1, 1, rl.Blue)
 		rl.EndMode3D()
 
@@ -118,5 +123,21 @@ func updateCamera() rl.Camera3D {
 		},
 		Fovy:       gameCamera.Fovy,
 		Projection: rl.CameraPerspective,
+	}
+}
+
+func drawGradientSky(topColor, bottomColor rl.Color) {
+	width := int32(screenWidth)
+	height := int32(screenHeight)
+
+	for i := int32(0); i < height; i++ {
+		t := float32(i) / float32(height)
+		color := rl.Color{
+			R: uint8(float32(topColor.R)*(1-t) + float32(bottomColor.R)*t),
+			G: uint8(float32(topColor.G)*(1-t) + float32(bottomColor.G)*t),
+			B: uint8(float32(topColor.B)*(1-t) + float32(bottomColor.B)*t),
+			A: 255,
+		}
+		rl.DrawLine(0, i, width, i, color)
 	}
 }
