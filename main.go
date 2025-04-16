@@ -20,15 +20,14 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	// Create the player and retrieve its pointer/instance.
-	game.CreatePlayer(
+	player := game.CreatePlayer(
 		game.Player{
-			X:     0,
-			Y:     0,
-			Z:     0,
-			Alive: true,
+			X:         0,
+			Y:         0,
+			Z:         0,
+			MoveSpeed: 0.01,
+			Alive:     true,
 		})
-	player := game.GetPlayer()
 
 	for !rl.WindowShouldClose() {
 		if player.Alive {
@@ -61,13 +60,33 @@ func main() {
 
 		if rl.IsKeyDown(rl.KeySpace) {
 			player.Y += 1
-		} else if rl.IsKeyDown(rl.KeyLeftControl) {
+		}
+		if rl.IsKeyDown(rl.KeyLeftControl) {
 			player.Y -= 1
+		}
+
+		if rl.IsKeyDown(rl.KeyW) {
+			player.X += gameMath.Sin(screenYaw) * player.MoveSpeed
+			player.Z += gameMath.Cos(screenYaw) * player.MoveSpeed
+		}
+
+		if rl.IsKeyDown(rl.KeyS) {
+			player.X -= gameMath.Sin(screenYaw) * player.MoveSpeed
+			player.Z -= gameMath.Cos(screenYaw) * player.MoveSpeed
+		}
+
+		if rl.IsKeyDown(rl.KeyA) {
+			player.X += gameMath.Sin(screenYaw+1.57) * player.MoveSpeed
+			player.Z += gameMath.Cos(screenYaw+1.57) * player.MoveSpeed
+		}
+
+		if rl.IsKeyDown(rl.KeyD) {
+			player.X += gameMath.Sin(screenYaw-1.57) * player.MoveSpeed
+			player.Z += gameMath.Cos(screenYaw-1.57) * player.MoveSpeed
 		}
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
-		rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
 		rl.DrawFPS(100, 100)
 
 		rl.BeginMode3D(camera)

@@ -6,10 +6,7 @@ var (
 
 func CreatePlayer(
 	player Player,
-) {
+) Player {
 	gamePlayer = player
-}
-
-func GetPlayer() Player {
 	return gamePlayer
 }
