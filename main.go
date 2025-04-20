@@ -11,16 +11,17 @@ import (
 )
 
 var (
-	screenWidth       float32 = 1600
-	screenHeight      float32 = 900
-	screenYaw         float32 = 0
-	screenPitch       float32 = 0
-	mouseSensitivity  float32 = 0.001
-	pitchMaxThreshold float32 = 0
-	pitchMinThreshold float32 = 1.5
-	zoomSensitivity   float32 = 2.0
-	fovMin            float32 = 70
-	fovMax            float32 = 100
+	screenWidth             float32 = 1600
+	screenHeight            float32 = 900
+	screenYaw               float32 = 0
+	screenPitch             float32 = 0
+	mouseSensitivity        float32 = 0.001
+	pitchMaxThreshold       float32 = 0
+	pitchMinThreshold       float32 = 1.5
+	zoomSensitivity         float32 = 2.0
+	fovMin                  float32 = 70
+	fovMax                  float32 = 100
+	cameraMovementThreshold float32 = 50
 
 	// UI toggle state
 	showControls bool = false
@@ -69,6 +70,7 @@ func main() {
 			rl.ShowCursor()
 		}
 		cameraEdgeCheck(player)
+		cameraPositionThreshold(player)
 
 		rl.BeginDrawing()
 		// draw 2d stuffs
@@ -170,6 +172,21 @@ func pitchThreshold() {
 		screenPitch = pitchMaxThreshold
 	} else if screenPitch < -pitchMinThreshold {
 		screenPitch = -pitchMinThreshold
+	}
+}
+
+func cameraPositionThreshold(player *game.Player) {
+	if player.X > cameraMovementThreshold {
+		player.X = cameraMovementThreshold
+	}
+	if player.X < -cameraMovementThreshold {
+		player.X = -cameraMovementThreshold
+	}
+	if player.Z > cameraMovementThreshold {
+		player.Z = cameraMovementThreshold
+	}
+	if player.Z < -cameraMovementThreshold {
+		player.Z = -cameraMovementThreshold
 	}
 }
 
