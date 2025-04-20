@@ -5,20 +5,22 @@ import (
 	embedWrapper "MysteryGameJam2025/embed"
 	"MysteryGameJam2025/game"
 	gameMath "MysteryGameJam2025/math"
+	"MysteryGameJam2025/raylib"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 )
 
 var (
-	screenWidth      float32 = 1600
-	screenHeight     float32 = 900
-	screenYaw        float32 = 0
-	screenPitch      float32 = 0
-	mouseSensitivity float32 = 0.001
-	pitchThreshold   float32 = 1.5
-	zoomSensitivity  float32 = 2.0
-	fovMin           float32 = 70
-	fovMax           float32 = 100
+	screenWidth       float32 = 1600
+	screenHeight      float32 = 900
+	screenYaw         float32 = 0
+	screenPitch       float32 = 0
+	mouseSensitivity  float32 = 0.001
+	pitchMaxThreshold float32 = 0
+	pitchMinThreshold float32 = 1.5
+	zoomSensitivity   float32 = 2.0
+	fovMin            float32 = 70
+	fovMax            float32 = 100
 
 	// UI toggle state
 	showControls bool = false
@@ -39,18 +41,16 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	player := game.CreatePlayer(
-		game.Player{
-			X:         0,
-			Y:         10,
-			Z:         0,
-			MoveSpeed: 0.5,
-			Alive:     true,
-		})
-	defer game.DeletePlayer()
+	game.InitPlayer()
+	defer game.UnloadPlayer()
+	player := game.GetPlayer()
+
 	setInitialTarget(player)
 	rl.InitAudioDevice()
 	bgm := embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
+
+	raylib.InitEarth()
+	defer raylib.UnloadEarth()
 
 	for !rl.WindowShouldClose() {
 		if !rl.IsSoundPlaying(bgm) {
@@ -62,6 +62,7 @@ func main() {
 		camera := updateCamera()
 		cameraZoomControl()
 		cameraNormalControl(player)
+		pitchThreshold()
 		if player.Alive && rl.IsMouseButtonDown(rl.MouseButtonRight) {
 			cameraClickedControl(player)
 		} else {
@@ -80,7 +81,7 @@ func main() {
 		rl.BeginMode3D(camera)
 		// draw 3d stuffs
 		rl.DrawGrid(1000, 1)
-
+		raylib.DrawEarth()
 		rl.DrawCube(rl.Vector3{X: 0, Y: 0.5, Z: 3}, 1, 1, 1, rl.Blue)
 		rl.EndMode3D()
 
@@ -149,12 +150,6 @@ func cameraClickedControl(player *game.Player) {
 	screenYaw -= mouseDelta.X * mouseSensitivity
 	screenPitch -= mouseDelta.Y * mouseSensitivity
 
-	if screenPitch > pitchThreshold {
-		screenPitch = pitchThreshold
-	} else if screenPitch < -pitchThreshold {
-		screenPitch = -pitchThreshold
-	}
-
 	gameCamera.PositionX = player.X
 	gameCamera.PositionY = player.Y
 	gameCamera.PositionZ = player.Z
@@ -170,6 +165,14 @@ func cameraClickedControl(player *game.Player) {
 	rl.DisableCursor()
 }
 
+func pitchThreshold() {
+	if screenPitch > pitchMaxThreshold {
+		screenPitch = pitchMaxThreshold
+	} else if screenPitch < -pitchMinThreshold {
+		screenPitch = -pitchMinThreshold
+	}
+}
+
 func setInitialTarget(player *game.Player) {
 	initialDir := rl.Vector3{
 		X: 0 - player.X,
@@ -183,12 +186,6 @@ func setInitialTarget(player *game.Player) {
 	mouseDelta := rl.GetMouseDelta()
 	screenYaw -= mouseDelta.X * mouseSensitivity
 	screenPitch -= mouseDelta.Y * mouseSensitivity
-
-	if screenPitch > pitchThreshold {
-		screenPitch = pitchThreshold
-	} else if screenPitch < -pitchThreshold {
-		screenPitch = -pitchThreshold
-	}
 
 	gameCamera.PositionX = player.X
 	gameCamera.PositionY = player.Y
