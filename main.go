@@ -58,11 +58,10 @@ func main() {
 
 	for !rl.WindowShouldClose() {
 		if isGameEnded() {
-			if game.HasWon() {
+			if renderEnd() {
+				return
 			}
-
-			if game.HasLost() {
-			}
+			continue
 		} else {
 			if !rl.IsSoundPlaying(battleBgm) {
 				rl.PlaySound(battleBgm)
@@ -102,6 +101,34 @@ func main() {
 
 		rl.EndDrawing()
 	}
+}
+
+func renderEnd() bool {
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.RayWhite)
+	label := "Victory"
+	if game.HasLost() {
+		label = "Defeat"
+	}
+	sw := int32(screenWidth)
+	sh := int32(screenHeight)
+	bw, bh := int32(300), int32(100)
+	bx, by := (sw-bw)/2, (sh-bh)/2
+
+	rl.DrawRectangle(bx, by, bw, bh, rl.DarkGray)
+	tw := rl.MeasureText(label, 48)
+	rl.DrawText(label, bx+(bw-tw)/2, by+(bh/2-24), 48, rl.White)
+
+	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
+		mp := rl.GetMousePosition()
+		if mp.X >= float32(bx) && mp.X <= float32(bx+bw) &&
+			mp.Y >= float32(by) && mp.Y <= float32(by+bh) {
+			rl.CloseWindow()
+			return true
+		}
+	}
+	rl.EndDrawing()
+	return false
 }
 
 func isGameEnded() bool {
