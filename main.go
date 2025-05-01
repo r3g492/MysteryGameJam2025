@@ -123,7 +123,7 @@ func renderEnd() bool {
 		mp := rl.GetMousePosition()
 		if mp.X >= float32(bx) && mp.X <= float32(bx+bw) &&
 			mp.Y >= float32(by) && mp.Y <= float32(by+bh) {
-			rl.CloseWindow()
+			rl.EndDrawing()
 			return true
 		}
 	}
