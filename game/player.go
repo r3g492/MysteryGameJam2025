@@ -9,16 +9,14 @@ type Player struct {
 	Y         float32
 	Z         float32
 	MoveSpeed float32
-	Alive     bool
 }
 
 func InitPlayer() *Player {
 	gamePlayer = &Player{
 		X:         0,
-		Y:         10,
-		Z:         0,
+		Y:         100,
+		Z:         50,
 		MoveSpeed: 0.5,
-		Alive:     true,
 	}
 	return gamePlayer
 }

@@ -21,7 +21,7 @@ var (
 	zoomSensitivity         float32 = 2.0
 	fovMin                  float32 = 70
 	fovMax                  float32 = 100
-	cameraMovementThreshold float32 = 50
+	cameraMovementThreshold float32 = 300
 
 	// UI toggle state
 	showControls bool = false
@@ -33,8 +33,8 @@ var (
 )
 
 const HalfPi float32 = 1.57
-const PlayerHighestPoint float32 = 10
-const PlayerLowestPoint float32 = 0.05
+const PlayerHighestPoint float32 = 100
+const PlayerLowestPoint float32 = 80
 
 func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "MysteryGameJam2025")
@@ -46,31 +46,42 @@ func main() {
 	defer game.UnloadPlayer()
 	player := game.GetPlayer()
 
+	game.GenerateCandidates(8)
+
 	setInitialTarget(player)
 	rl.InitAudioDevice()
-	bgm := embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
+	_ = embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
+	battleBgm := embedWrapper.LoadSoundFromEmbedded("horror-tension-suspense-322304.mp3")
 
 	raylib.InitEarth()
 	defer raylib.UnloadEarth()
 
 	for !rl.WindowShouldClose() {
-		if !rl.IsSoundPlaying(bgm) {
-			rl.PlaySound(bgm)
-		}
+		if isGameEnded() {
+			if game.HasWon() {
+			}
 
-		handleControlsToggle()
+			if game.HasLost() {
+			}
+		} else {
+			if !rl.IsSoundPlaying(battleBgm) {
+				rl.PlaySound(battleBgm)
+			}
+			cameraResetControl(player)
+			handleControlsToggle()
+			cameraZoomControl()
+			cameraNormalControl(player)
+			pitchThreshold()
+			if rl.IsMouseButtonDown(rl.MouseButtonRight) {
+				cameraClickedControl(player)
+			} else {
+				rl.ShowCursor()
+			}
+			cameraEdgeCheck(player)
+			cameraPositionThreshold(player)
+		}
 
 		camera := updateCamera()
-		cameraZoomControl()
-		cameraNormalControl(player)
-		pitchThreshold()
-		if player.Alive && rl.IsMouseButtonDown(rl.MouseButtonRight) {
-			cameraClickedControl(player)
-		} else {
-			rl.ShowCursor()
-		}
-		cameraEdgeCheck(player)
-		cameraPositionThreshold(player)
 
 		rl.BeginDrawing()
 		// draw 2d stuffs
@@ -93,6 +104,13 @@ func main() {
 	}
 }
 
+func isGameEnded() bool {
+	if rl.IsKeyDown(rl.KeyF1) {
+		return true
+	}
+	return false
+}
+
 func cameraEdgeCheck(player *game.Player) {
 	if player.Y > PlayerHighestPoint {
 		player.Y = PlayerHighestPoint
@@ -100,6 +118,15 @@ func cameraEdgeCheck(player *game.Player) {
 
 	if player.Y < PlayerLowestPoint {
 		player.Y = PlayerLowestPoint
+	}
+}
+
+func cameraResetControl(player *game.Player) {
+	if rl.IsKeyDown(rl.KeySpace) {
+		player.X = 0
+		player.Y = 100
+		player.Z = 50
+		setInitialTarget(player)
 	}
 }
 
@@ -277,6 +304,8 @@ func drawControlsUI() {
 		rl.DrawText("Scroll wheel = Zoom", panelPadding, y, 18, rl.White)
 		y += 25
 		rl.DrawText("Right click + drag = Free look", panelPadding, y, 18, rl.White)
+		y += 25
+		rl.DrawText("Space = Reset screen", panelPadding, y, 18, rl.White)
 	} else {
 		rl.DrawRectangle(0, 0, controlsTabWidth, controlsTabHeight, rl.Gray)
 		rl.DrawText("controls", 5, 5, 20, rl.White)
