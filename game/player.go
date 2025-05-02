@@ -14,7 +14,7 @@ type Player struct {
 func InitPlayer() *Player {
 	gamePlayer = &Player{
 		X:         0,
-		Y:         100,
+		Y:         70,
 		Z:         50,
 		MoveSpeed: 0.5,
 	}

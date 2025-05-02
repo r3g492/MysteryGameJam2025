@@ -6,9 +6,15 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var earthMesh rl.Mesh
-var earthModel rl.Model
-var earthTexture rl.Texture2D
+var (
+	earthMesh    rl.Mesh
+	earthModel   rl.Model
+	earthTexture rl.Texture2D
+
+	earthRot      float32 = 0                // current angle in degrees
+	earthRotSpeed float32 = 10               // °/sec – tweak to taste
+	axisY                 = rl.Vector3{Y: 1} // (0,1,0) – spin around Y
+)
 
 func InitEarth() {
 	earthTextureResponse, _ := embedWrapper.LoadTextureFromEmbedded(
@@ -38,6 +44,12 @@ func UnloadEarth() {
 }
 
 func DrawEarth() {
+	earthRot += earthRotSpeed * rl.GetFrameTime()
+	if earthRot >= 360 { // keep the value small
+		earthRot -= 360
+	}
 	pos := rl.Vector3{X: game.EarthPositionX, Y: game.EarthPositionY, Z: game.EarthPositionZ}
-	rl.DrawModel(earthModel, pos, 1.0, rl.White)
+	scale := rl.Vector3{X: 1, Y: 1, Z: 1}
+
+	rl.DrawModelEx(earthModel, pos, axisY, earthRot, scale, rl.White)
 }

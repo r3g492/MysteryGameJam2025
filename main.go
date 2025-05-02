@@ -92,7 +92,7 @@ func main() {
 
 		rl.BeginMode3D(camera)
 		// draw 3d stuffs
-		rl.DrawGrid(1000, 1)
+		// rl.DrawGrid(1000, 1)
 		raylib.DrawEarth()
 		rl.DrawCube(rl.Vector3{X: 0, Y: 0.5, Z: 3}, 1, 1, 1, rl.Blue)
 		rl.EndMode3D()
