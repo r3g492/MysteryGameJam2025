@@ -38,7 +38,13 @@ const PlayerLowestPoint float32 = 80
 
 func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "MysteryGameJam2025")
-	// rl.ToggleFullscreen()
+	monitor := rl.GetCurrentMonitor()
+	fullScreenWidth := rl.GetMonitorWidth(monitor)
+	fullScreenHeight := rl.GetMonitorHeight(monitor)
+	screenWidth = float32(fullScreenWidth)
+	screenHeight = float32(fullScreenHeight)
+	rl.SetWindowSize(fullScreenWidth, fullScreenHeight)
+	rl.ToggleFullscreen()
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
@@ -132,7 +138,13 @@ func renderEnd() bool {
 }
 
 func isGameEnded() bool {
-	if rl.IsKeyDown(rl.KeyF1) {
+	if rl.IsKeyDown(rl.KeyF4) {
+		game.EarthHealth = 0
+	}
+	if rl.IsKeyDown(rl.KeyF5) {
+		game.EarthHealth = 100
+	}
+	if game.HasLost() {
 		return true
 	}
 	return false
