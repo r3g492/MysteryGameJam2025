@@ -30,6 +30,11 @@ var (
 	controlsTabWidth  int32 = 30
 	controlsTabHeight int32 = 100
 	panelPadding      int32 = 10
+	alienRevealed     bool  = false
+
+	calmBgm   rl.Sound
+	battleBgm rl.Sound
+	curBgm    *rl.Sound
 )
 
 const HalfPi float32 = 1.57
@@ -56,22 +61,28 @@ func main() {
 
 	setInitialTarget(player)
 	rl.InitAudioDevice()
-	_ = embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
-	battleBgm := embedWrapper.LoadSoundFromEmbedded("horror-tension-suspense-322304.mp3")
+	calmBgm = embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
+	battleBgm = embedWrapper.LoadSoundFromEmbedded("horror-tension-suspense-322304.mp3")
+	initBgm()
 
 	raylib.InitEarth()
 	defer raylib.UnloadEarth()
+	raylib.InitMoon()
+	defer raylib.UnloadMoon()
 
 	for !rl.WindowShouldClose() {
+		if rl.IsKeyPressed(rl.KeyF5) {
+			alienRevealed = !alienRevealed
+		}
+
 		if isGameEnded() {
 			if renderEnd() {
 				return
 			}
 			continue
 		} else {
-			if !rl.IsSoundPlaying(battleBgm) {
-				rl.PlaySound(battleBgm)
-			}
+			updateBgm(alienRevealed)
+
 			cameraResetControl(player)
 			handleControlsToggle()
 			cameraZoomControl()
@@ -100,6 +111,7 @@ func main() {
 		// draw 3d stuffs
 		// rl.DrawGrid(1000, 1)
 		raylib.DrawEarth()
+		raylib.DrawMoon()
 		rl.DrawCube(rl.Vector3{X: 0, Y: 0.5, Z: 3}, 1, 1, 1, rl.Blue)
 		rl.EndMode3D()
 
@@ -348,5 +360,27 @@ func drawControlsUI() {
 	} else {
 		rl.DrawRectangle(0, 0, controlsTabWidth, controlsTabHeight, rl.Gray)
 		rl.DrawText("controls", 5, 5, 20, rl.White)
+	}
+}
+
+func initBgm() {
+	curBgm = &calmBgm
+	rl.PlaySound(*curBgm) // start with the calm theme
+}
+
+func updateBgm(alienRevealed bool) {
+	// decide which track we *should* be on
+	want := &calmBgm
+	if alienRevealed {
+		want = &battleBgm
+	}
+
+	// did we switch state?
+	if want != curBgm {
+		rl.StopSound(*curBgm) // stop the old one
+		curBgm = want
+		rl.PlaySound(*curBgm) // and start the new one
+	} else if !rl.IsSoundPlaying(*curBgm) {
+		rl.PlaySound(*curBgm) // restart if it finished (manual “loop”)
 	}
 }
