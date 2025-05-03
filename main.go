@@ -134,6 +134,9 @@ func main() {
 				}
 			}
 		}
+		if rl.IsMouseButtonReleased(rl.MouseButtonLeft) {
+
+		}
 
 		rl.EndMode3D()
 
@@ -179,112 +182,6 @@ func isGameEnded() bool {
 		return true
 	}
 	return false
-}
-
-func cameraEdgeCheck(player *game.Player) {
-	if player.Y > PlayerHighestPoint {
-		player.Y = PlayerHighestPoint
-	}
-
-	if player.Y < PlayerLowestPoint {
-		player.Y = PlayerLowestPoint
-	}
-}
-
-func cameraResetControl(player *game.Player) {
-	if rl.IsKeyDown(rl.KeySpace) {
-		player.X = 0
-		player.Y = 100
-		player.Z = 50
-		setInitialTarget(player)
-	}
-}
-
-func cameraZoomControl() {
-	wheelMove := rl.GetMouseWheelMove()
-	gameCamera.Fovy -= wheelMove * zoomSensitivity
-	if gameCamera.Fovy < fovMin {
-		gameCamera.Fovy = fovMin
-	} else if gameCamera.Fovy > fovMax {
-		gameCamera.Fovy = fovMax
-	}
-}
-
-func cameraNormalControl(player *game.Player) {
-	gameCamera.PositionX = player.X
-	gameCamera.PositionY = player.Y
-	gameCamera.PositionZ = player.Z
-
-	dirX := gameMath.Cos(screenPitch) * gameMath.Sin(screenYaw)
-	dirY := gameMath.Sin(screenPitch)
-	dirZ := gameMath.Cos(screenPitch) * gameMath.Cos(screenYaw)
-
-	gameCamera.TargetX = player.X + dirX
-	gameCamera.TargetY = player.Y + dirY
-	gameCamera.TargetZ = player.Z + dirZ
-
-	if rl.IsKeyDown(rl.KeyW) {
-		player.X += gameMath.Sin(screenYaw) * player.MoveSpeed
-		player.Z += gameMath.Cos(screenYaw) * player.MoveSpeed
-	}
-
-	if rl.IsKeyDown(rl.KeyS) {
-		player.X -= gameMath.Sin(screenYaw) * player.MoveSpeed
-		player.Z -= gameMath.Cos(screenYaw) * player.MoveSpeed
-	}
-
-	if rl.IsKeyDown(rl.KeyA) {
-		player.X += gameMath.Sin(screenYaw+HalfPi) * player.MoveSpeed
-		player.Z += gameMath.Cos(screenYaw+HalfPi) * player.MoveSpeed
-	}
-
-	if rl.IsKeyDown(rl.KeyD) {
-		player.X += gameMath.Sin(screenYaw-HalfPi) * player.MoveSpeed
-		player.Z += gameMath.Cos(screenYaw-HalfPi) * player.MoveSpeed
-	}
-}
-
-func cameraClickedControl(player *game.Player) {
-	mouseDelta := rl.GetMouseDelta()
-	screenYaw -= mouseDelta.X * mouseSensitivity
-	screenPitch -= mouseDelta.Y * mouseSensitivity
-
-	gameCamera.PositionX = player.X
-	gameCamera.PositionY = player.Y
-	gameCamera.PositionZ = player.Z
-
-	dirX := gameMath.Cos(screenPitch) * gameMath.Sin(screenYaw)
-	dirY := gameMath.Sin(screenPitch)
-	dirZ := gameMath.Cos(screenPitch) * gameMath.Cos(screenYaw)
-
-	gameCamera.TargetX = player.X + dirX
-	gameCamera.TargetY = player.Y + dirY
-	gameCamera.TargetZ = player.Z + dirZ
-
-	rl.DisableCursor()
-}
-
-func pitchThreshold() {
-	if screenPitch > pitchMaxThreshold {
-		screenPitch = pitchMaxThreshold
-	} else if screenPitch < -pitchMinThreshold {
-		screenPitch = -pitchMinThreshold
-	}
-}
-
-func cameraPositionThreshold(player *game.Player) {
-	if player.X > cameraMovementThreshold {
-		player.X = cameraMovementThreshold
-	}
-	if player.X < -cameraMovementThreshold {
-		player.X = -cameraMovementThreshold
-	}
-	if player.Z > cameraMovementThreshold {
-		player.Z = cameraMovementThreshold
-	}
-	if player.Z < -cameraMovementThreshold {
-		player.Z = -cameraMovementThreshold
-	}
 }
 
 func setInitialTarget(player *game.Player) {
@@ -349,36 +246,6 @@ func drawGradientSky(topColor, bottomColor rl.Color) {
 			A: 255,
 		}
 		rl.DrawLine(0, i, width, i, color)
-	}
-}
-
-func handleControlsToggle() {
-	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
-		m := rl.GetMousePosition()
-		if m.X <= float32(controlsTabWidth) && m.Y <= float32(controlsTabHeight) && !showControls {
-			showControls = true
-		} else if m.X <= float32(controlsTabWidth+400) && m.Y <= float32(controlsTabHeight+50) && showControls {
-			showControls = false
-		}
-	}
-}
-
-func drawControlsUI() {
-	if showControls {
-		rl.DrawRectangle(0, 0, controlsTabWidth+400, controlsTabHeight+50, rl.Gray)
-		rl.DrawText("<<", 5, 5, 20, rl.White)
-		y := panelPadding
-		y += 30
-		rl.DrawText("W/A/S/D = Move forward/left/back/right", panelPadding, y, 18, rl.White)
-		y += 25
-		rl.DrawText("Scroll wheel = Zoom", panelPadding, y, 18, rl.White)
-		y += 25
-		rl.DrawText("Right click + drag = Free look", panelPadding, y, 18, rl.White)
-		y += 25
-		rl.DrawText("Space = Reset screen", panelPadding, y, 18, rl.White)
-	} else {
-		rl.DrawRectangle(0, 0, controlsTabWidth, controlsTabHeight, rl.Gray)
-		rl.DrawText("controls", 5, 5, 20, rl.White)
 	}
 }
 

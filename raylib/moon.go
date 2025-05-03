@@ -14,16 +14,16 @@ var (
 	moonSpinSpeed float32 = 10
 
 	moonOrbitDeg   float32 = 0
-	moonOrbitSpeed float32 = 5
+	moonOrbitSpeed float32 = 1
+	moonRadius     float32 = 1
+	moonOrbitRad   float32 = 20
 )
-
-var moonAxisY = rl.Vector3{Y: 1}
 
 func InitMoon() {
 	tex, _ := embedWrapper.LoadTextureFromEmbedded("earth.png", 500, 500) // texture path unchanged
 	moonTexture = tex
 
-	moonMesh = rl.GenMeshSphere(1, 64, 64)
+	moonMesh = rl.GenMeshSphere(moonRadius, 64, 64)
 	moonModel = rl.LoadModelFromMesh(moonMesh)
 
 	for i := range moonModel.GetMaterials() {
@@ -49,7 +49,7 @@ func DrawMoon() {
 		moonOrbitDeg -= 360
 	}
 
-	orbitRad := float32(20)
+	orbitRad := moonOrbitRad
 	rad := moonOrbitDeg * (math.Pi / 180)
 
 	pos := rl.Vector3{
@@ -60,7 +60,18 @@ func DrawMoon() {
 
 	rl.DrawSphere(
 		pos,
-		1,
+		moonRadius,
 		rl.DarkGray,
 	)
+}
+
+func GetMoonCollision() (x float32, z float32, radius float32) {
+	orbitRad := moonOrbitRad
+	rad := moonOrbitDeg * (math.Pi / 180)
+
+	x = float32(math.Cos(float64(rad))) * orbitRad
+	z = float32(math.Sin(float64(rad))) * orbitRad
+	radius = moonRadius
+
+	return x, z, radius
 }
