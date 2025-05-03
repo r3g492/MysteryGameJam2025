@@ -4,23 +4,23 @@ import "time"
 
 var (
 	startTime        time.Time
-	countDownBegin   bool = false
+	CountDownBegin   bool = false
 	countDownSeconds int
 )
 
 func StartCountdown(
 	countDownSecondsInput int,
 ) {
-	if countDownBegin {
+	if CountDownBegin {
 		return
 	}
 	startTime = time.Now()
-	countDownBegin = true
+	CountDownBegin = true
 	countDownSeconds = countDownSecondsInput
 }
 
 func GetCountdown() int {
-	if countDownBegin {
+	if CountDownBegin {
 		elapsed := time.Since(startTime)
 		remaining := countDownSeconds - int(elapsed.Seconds())
 		if remaining <= 0 {
@@ -32,7 +32,7 @@ func GetCountdown() int {
 }
 
 func IsCountdownFinished() bool {
-	if countDownBegin {
+	if CountDownBegin {
 		elapsed := time.Since(startTime)
 		remaining := countDownSeconds - int(elapsed.Seconds())
 		if remaining <= 0 {

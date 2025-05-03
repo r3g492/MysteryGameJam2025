@@ -13,36 +13,17 @@ import (
 )
 
 var (
-	screenWidth             float32 = 1600
-	screenHeight            float32 = 900
-	screenYaw               float32 = 0
-	screenPitch             float32 = 0
-	mouseSensitivity        float32 = 0.001
-	pitchMaxThreshold       float32 = 0
-	pitchMinThreshold       float32 = 1.5
-	zoomSensitivity         float32 = 2.0
-	fovMin                  float32 = 70
-	fovMax                  float32 = 100
-	cameraMovementThreshold float32 = 300
+	screenWidth      float32 = 1600
+	screenHeight     float32 = 900
+	screenYaw        float32 = 0
+	screenPitch      float32 = 0
+	mouseSensitivity float32 = 0.001
+	alienRevealed    bool    = false
 
-	// UI toggle state
-	showControls bool = false
-
-	// UI dimensions
-	controlsTabWidth  int32 = 30
-	controlsTabHeight int32 = 100
-	panelPadding      int32 = 10
-	alienRevealed     bool  = false
-
-	calmBgm      rl.Sound
-	battleBgm    rl.Sound
-	curBgm       *rl.Sound
-	survivalTime int = 60
+	calmBgm   rl.Sound
+	battleBgm rl.Sound
+	curBgm    *rl.Sound
 )
-
-const HalfPi float32 = 1.57
-const PlayerHighestPoint float32 = 100
-const PlayerLowestPoint float32 = 80
 
 // START game state
 const (
@@ -87,28 +68,27 @@ func main() {
 	defer raylib.UnloadSun()
 
 	for !rl.WindowShouldClose() {
-		game.StartCountdown(60)
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
 		}
 
 		if isGameEnded() || game.IsCountdownFinished() {
+			alienRevealed = false
+			updateBgm(alienRevealed)
 			if renderEnd() {
 				return
 			}
 			continue
-		} else {
-			updateBgm(alienRevealed)
 		}
+
+		updateBgm(alienRevealed)
 
 		camera := updateCamera()
 
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.RayWhite)
-		// draw 2d stuffs
 		drawGradientSky(rl.Black, rl.LightGray)
-
 		rl.BeginMode3D(camera)
 		rl.DrawSphere(rl.Vector3{X: 5, Y: 5, Z: 0}, 0.5, rl.Red)
 		raylib.DrawEarth()
@@ -129,10 +109,11 @@ func main() {
 
 		renderModeChangeButton(camera)
 
-		secs := game.GetCountdown()
-		rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
-
-		// rl.DrawFPS(100, 100)
+		game.StartCountdown(5)
+		if game.CountDownBegin {
+			secs := game.GetCountdown()
+			rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
+		}
 
 		rl.EndDrawing()
 	}
