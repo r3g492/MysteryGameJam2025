@@ -2,37 +2,32 @@ package raylib
 
 import (
 	embedWrapper "MysteryGameJam2025/embed"
-	"MysteryGameJam2025/game"
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"math"
 )
 
 var (
-	moonMesh    rl.Mesh
-	moonModel   rl.Model
-	moonTexture rl.Texture2D
+	moonMesh      rl.Mesh
+	moonModel     rl.Model
+	moonTexture   rl.Texture2D
+	moonSpinDeg   float32 = 0
+	moonSpinSpeed float32 = 10
 
-	moonRot      float32 = 0                // current angle in degrees
-	moonRotSpeed float32 = 10               // °/sec – tweak to taste
-	moonAxisY            = rl.Vector3{Y: 1} // (0,1,0) – spin around Y
+	moonOrbitDeg   float32 = 0
+	moonOrbitSpeed float32 = 5
 )
 
-func InitMoon() {
-	moonTextureResponse, _ := embedWrapper.LoadTextureFromEmbedded(
-		"earth.png",
-		500,
-		500,
-	)
-	moonTexture = moonTextureResponse
+var moonAxisY = rl.Vector3{Y: 1}
 
-	moonMesh = rl.GenMeshSphere(
-		game.MoonRadius,
-		64,
-		64,
-	)
+func InitMoon() {
+	tex, _ := embedWrapper.LoadTextureFromEmbedded("earth.png", 500, 500) // texture path unchanged
+	moonTexture = tex
+
+	moonMesh = rl.GenMeshSphere(1, 64, 64)
 	moonModel = rl.LoadModelFromMesh(moonMesh)
 
 	for i := range moonModel.GetMaterials() {
-		rl.SetMaterialTexture(&earthModel.GetMaterials()[i], rl.MapDiffuse, moonTexture)
+		rl.SetMaterialTexture(&moonModel.GetMaterials()[i], rl.MapDiffuse, moonTexture)
 	}
 }
 
@@ -42,12 +37,31 @@ func UnloadMoon() {
 }
 
 func DrawMoon() {
-	moonRot += moonRotSpeed * rl.GetFrameTime()
-	if moonRot >= 360 {
-		moonRot -= 360
-	}
-	pos := rl.Vector3{X: game.MoonPositionX, Y: game.MoonPositionY, Z: game.MoonPositionZ}
-	scale := rl.Vector3{X: 1, Y: 1, Z: 1}
+	dt := rl.GetFrameTime()
 
-	rl.DrawModelEx(moonModel, pos, moonAxisY, moonRot, scale, rl.DarkGray)
+	moonSpinDeg += moonSpinSpeed * dt
+	if moonSpinDeg >= 360 {
+		moonSpinDeg -= 360
+	}
+
+	moonOrbitDeg += moonOrbitSpeed * dt
+	if moonOrbitDeg >= 360 {
+		moonOrbitDeg -= 360
+	}
+
+	orbitRad := float32(20)
+	rad := moonOrbitDeg * (math.Pi / 180)
+
+	pos := rl.Vector3{
+		X: float32(math.Cos(float64(rad))) * orbitRad,
+		Y: 0,
+		Z: float32(math.Sin(float64(rad))) * orbitRad,
+	}
+
+	//rl.DrawModelEx(moonModel, pos, moonAxisY, moonSpinDeg, rl.Vector3{X: 1, Y: 1, Z: 1}, rl.LightGray)
+	rl.DrawSphere(
+		pos,
+		1,
+		rl.DarkGray,
+	)
 }

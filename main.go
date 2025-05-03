@@ -8,6 +8,8 @@ import (
 	"MysteryGameJam2025/raylib"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
+	"strconv"
+	"time"
 )
 
 var (
@@ -32,9 +34,10 @@ var (
 	panelPadding      int32 = 10
 	alienRevealed     bool  = false
 
-	calmBgm   rl.Sound
-	battleBgm rl.Sound
-	curBgm    *rl.Sound
+	calmBgm      rl.Sound
+	battleBgm    rl.Sound
+	curBgm       *rl.Sound
+	survivalTime int = 60
 )
 
 const HalfPi float32 = 1.57
@@ -57,8 +60,6 @@ func main() {
 	defer game.UnloadPlayer()
 	player := game.GetPlayer()
 
-	game.GenerateCandidates(8)
-
 	setInitialTarget(player)
 	rl.InitAudioDevice()
 	calmBgm = embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
@@ -69,53 +70,44 @@ func main() {
 	defer raylib.UnloadEarth()
 	raylib.InitMoon()
 	defer raylib.UnloadMoon()
+	raylib.InitSun()
+	defer raylib.UnloadSun()
 
+	startTime := time.Now()
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
 		}
 
-		if isGameEnded() {
+		if isGameEnded(startTime) {
 			if renderEnd() {
 				return
 			}
 			continue
 		} else {
 			updateBgm(alienRevealed)
-
-			cameraResetControl(player)
-			handleControlsToggle()
-			cameraZoomControl()
-			cameraNormalControl(player)
-			pitchThreshold()
-			if rl.IsMouseButtonDown(rl.MouseButtonRight) {
-				cameraClickedControl(player)
-			} else {
-				rl.ShowCursor()
-			}
-			cameraEdgeCheck(player)
-			cameraPositionThreshold(player)
 		}
 
 		camera := updateCamera()
 
 		rl.BeginDrawing()
-		// draw 2d stuffs
+
 		rl.ClearBackground(rl.RayWhite)
+		// draw 2d stuffs
 		drawGradientSky(rl.Black, rl.LightGray)
+
+		rl.BeginMode3D(camera)
+		rl.DrawSphere(rl.Vector3{X: 5, Y: 5, Z: 0}, 0.5, rl.Red)
+		raylib.DrawEarth()
+		raylib.DrawMoon()
+		raylib.DrawSun()
+		rl.EndMode3D()
+
+		secs := survivalTime - int(time.Since(startTime).Seconds())
+		rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
 
 		// draw uis
 		rl.DrawFPS(100, 100)
-
-		rl.BeginMode3D(camera)
-		// draw 3d stuffs
-		// rl.DrawGrid(1000, 1)
-		raylib.DrawEarth()
-		raylib.DrawMoon()
-		rl.DrawCube(rl.Vector3{X: 0, Y: 0.5, Z: 3}, 1, 1, 1, rl.Blue)
-		rl.EndMode3D()
-
-		drawControlsUI()
 
 		rl.EndDrawing()
 	}
@@ -149,12 +141,11 @@ func renderEnd() bool {
 	return false
 }
 
-func isGameEnded() bool {
-	if rl.IsKeyDown(rl.KeyF4) {
-		game.EarthHealth = 0
-	}
-	if rl.IsKeyDown(rl.KeyF5) {
-		game.EarthHealth = 100
+func isGameEnded(
+	startTime time.Time,
+) bool {
+	if (survivalTime - int(time.Since(startTime).Seconds())) <= 0 {
+		return true
 	}
 	if game.HasLost() {
 		return true
