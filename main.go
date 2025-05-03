@@ -23,6 +23,7 @@ var (
 	calmBgm   rl.Sound
 	battleBgm rl.Sound
 	curBgm    *rl.Sound
+	atStart   bool = true
 )
 
 // START game state
@@ -75,6 +76,13 @@ func main() {
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
+		}
+
+		if atStart {
+			if renderStart() {
+				atStart = false
+			}
+			continue
 		}
 
 		if isGameEnded() || game.IsCountdownFinished() {
@@ -187,6 +195,31 @@ func showRay(
 			rl.DrawSphere(hit, 0.3, rl.Yellow)
 		}
 	}
+}
+
+func renderStart() bool {
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.Black)
+	label := "Start"
+	sw := int32(screenWidth)
+	sh := int32(screenHeight)
+	bw, bh := int32(300), int32(100)
+	bx, by := (sw-bw)/2, (sh-bh)/2
+
+	rl.DrawRectangle(bx, by, bw, bh, rl.DarkGray)
+	tw := rl.MeasureText(label, 48)
+	rl.DrawText(label, bx+(bw-tw)/2, by+(bh/2-24), 48, rl.White)
+
+	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
+		mp := rl.GetMousePosition()
+		if mp.X >= float32(bx) && mp.X <= float32(bx+bw) &&
+			mp.Y >= float32(by) && mp.Y <= float32(by+bh) {
+			rl.EndDrawing()
+			return true
+		}
+	}
+	rl.EndDrawing()
+	return false
 }
 
 func renderEnd() bool {
