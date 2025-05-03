@@ -6,6 +6,7 @@ import (
 	"MysteryGameJam2025/game"
 	gameMath "MysteryGameJam2025/math"
 	"MysteryGameJam2025/raylib"
+	"fmt"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 	"strconv"
@@ -50,11 +51,11 @@ const (
 
 // projectile type
 const (
-	SCAN = iota
+	COMM = iota
 	MISSILE
 )
 
-var currentProjectileType int = SCAN
+var currentProjectileType int = COMM
 
 func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "MysteryGameJam2025")
@@ -114,31 +115,19 @@ func main() {
 		raylib.DrawMoon()
 		raylib.DrawSun()
 
-		if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-			mouse := rl.GetMousePosition()
-			ray := rl.GetScreenToWorldRay(mouse, camera)
-			if ray.Direction.Y != 0 {
-				t := -ray.Position.Y / ray.Direction.Y
-				if t > 0 {
-					hit := rl.Vector3{
-						X: ray.Position.X + ray.Direction.X*t,
-						Y: 0,
-						Z: ray.Position.Z + ray.Direction.Z*t,
-					}
-					rl.DrawLine3D(
-						rl.Vector3{X: 0, Y: 0, Z: 0},
-						hit,
-						rl.Green,
-					)
-					rl.DrawSphere(hit, 0.3, rl.Yellow)
-				}
-			}
+		if currentProjectileType == COMM {
+			showRay(camera, rl.Green)
+		} else if currentProjectileType == MISSILE {
+			showRay(camera, rl.Red)
 		}
-		if rl.IsMouseButtonReleased(rl.MouseButtonLeft) {
 
+		if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+			fmt.Println("fire shot")
 		}
 
 		rl.EndMode3D()
+
+		renderModeChangeButton(camera)
 
 		secs := game.GetCountdown()
 		rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
@@ -146,6 +135,71 @@ func main() {
 		// rl.DrawFPS(100, 100)
 
 		rl.EndDrawing()
+	}
+}
+
+func renderModeChangeButton(camera rl.Camera3D) {
+	earthScreen := rl.GetWorldToScreen(
+		rl.Vector3{X: 0, Y: 0, Z: 0},
+		camera,
+	)
+	if earthScreen.X > 0 && earthScreen.X < screenWidth &&
+		earthScreen.Y > 0 && earthScreen.Y < screenHeight {
+
+		bw, bh := int32(200), int32(16)
+		bx := int32(earthScreen.X) - bw/2
+		by := int32(earthScreen.Y) + 50
+
+		var label string
+		var btnColor rl.Color
+		if currentProjectileType == COMM {
+			label = "COMM MODE: Click to switch"
+			btnColor = rl.DarkGreen
+		} else {
+			label = "MISSILE MODE: Click to switch"
+			btnColor = rl.Maroon
+		}
+
+		rl.DrawRectangle(bx, by, bw, bh, btnColor)
+		tw := rl.MeasureText(label, 8)
+		rl.DrawText(label, bx+(bw-tw)/2, by+bh/2-9, 8, rl.White)
+
+		if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
+			mp := rl.GetMousePosition()
+			if mp.X >= float32(bx) && mp.X <= float32(bx+bw) &&
+				mp.Y >= float32(by) && mp.Y <= float32(by+bh) {
+
+				if currentProjectileType == COMM {
+					currentProjectileType = MISSILE
+				} else {
+					currentProjectileType = COMM
+				}
+			}
+		}
+	}
+}
+
+func showRay(
+	camera rl.Camera3D,
+	rayColor rl.Color,
+) {
+	mouse := rl.GetMousePosition()
+	ray := rl.GetScreenToWorldRay(mouse, camera)
+	if ray.Direction.Y != 0 {
+		t := -ray.Position.Y / ray.Direction.Y
+		if t > 0 {
+			hit := rl.Vector3{
+				X: ray.Position.X + ray.Direction.X*t,
+				Y: 0,
+				Z: ray.Position.Z + ray.Direction.Z*t,
+			}
+			rl.DrawLine3D(
+				rl.Vector3{X: 0, Y: 0, Z: 0},
+				hit,
+				rayColor,
+			)
+			rl.DrawSphere(hit, 0.3, rl.Yellow)
+		}
 	}
 }
 
