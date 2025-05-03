@@ -9,7 +9,6 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 	"strconv"
-	"time"
 )
 
 var (
@@ -44,6 +43,19 @@ const HalfPi float32 = 1.57
 const PlayerHighestPoint float32 = 100
 const PlayerLowestPoint float32 = 80
 
+// START game state
+const (
+	START = iota
+)
+
+// projectile type
+const (
+	SCAN = iota
+	MISSILE
+)
+
+var currentProjectileType int = SCAN
+
 func main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "MysteryGameJam2025")
 	monitor := rl.GetCurrentMonitor()
@@ -73,13 +85,13 @@ func main() {
 	raylib.InitSun()
 	defer raylib.UnloadSun()
 
-	startTime := time.Now()
 	for !rl.WindowShouldClose() {
+		game.StartCountdown(60)
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
 		}
 
-		if isGameEnded(startTime) {
+		if isGameEnded() || game.IsCountdownFinished() {
 			if renderEnd() {
 				return
 			}
@@ -101,13 +113,34 @@ func main() {
 		raylib.DrawEarth()
 		raylib.DrawMoon()
 		raylib.DrawSun()
+
+		if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+			mouse := rl.GetMousePosition()
+			ray := rl.GetScreenToWorldRay(mouse, camera)
+			if ray.Direction.Y != 0 {
+				t := -ray.Position.Y / ray.Direction.Y
+				if t > 0 {
+					hit := rl.Vector3{
+						X: ray.Position.X + ray.Direction.X*t,
+						Y: 0,
+						Z: ray.Position.Z + ray.Direction.Z*t,
+					}
+					rl.DrawLine3D(
+						rl.Vector3{X: 0, Y: 0, Z: 0},
+						hit,
+						rl.Green,
+					)
+					rl.DrawSphere(hit, 0.3, rl.Yellow)
+				}
+			}
+		}
+
 		rl.EndMode3D()
 
-		secs := survivalTime - int(time.Since(startTime).Seconds())
+		secs := game.GetCountdown()
 		rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
 
-		// draw uis
-		rl.DrawFPS(100, 100)
+		// rl.DrawFPS(100, 100)
 
 		rl.EndDrawing()
 	}
@@ -141,12 +174,7 @@ func renderEnd() bool {
 	return false
 }
 
-func isGameEnded(
-	startTime time.Time,
-) bool {
-	if (survivalTime - int(time.Since(startTime).Seconds())) <= 0 {
-		return true
-	}
+func isGameEnded() bool {
 	if game.HasLost() {
 		return true
 	}

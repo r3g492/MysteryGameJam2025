@@ -58,7 +58,6 @@ func DrawMoon() {
 		Z: float32(math.Sin(float64(rad))) * orbitRad,
 	}
 
-	//rl.DrawModelEx(moonModel, pos, moonAxisY, moonSpinDeg, rl.Vector3{X: 1, Y: 1, Z: 1}, rl.LightGray)
 	rl.DrawSphere(
 		pos,
 		1,
