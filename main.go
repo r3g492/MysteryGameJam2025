@@ -28,6 +28,11 @@ var (
 // START game state
 const (
 	START = iota
+	LAST_MESSAGE
+	ENEMY_APPEARS
+	ENEMY_DEFEATED
+	ALLY_APPEARS // comm을 외부로 날린 만큼 spawn 되서 옴
+	BETRAYAL
 )
 
 // projectile type
