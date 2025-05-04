@@ -11,16 +11,15 @@ func DrawProjectile() {
 		if projectile.Type == game.COMM {
 			rl.DrawSphere(
 				rl.Vector3{X: projectile.PosX, Y: projectile.PosY, Z: projectile.PosZ},
-				0.5,
+				0.3,
 				rl.Green,
 			)
 		} else if projectile.Type == game.MISSILE {
 			rl.DrawSphere(
 				rl.Vector3{X: projectile.PosX, Y: projectile.PosY, Z: projectile.PosZ},
-				0.5,
-				rl.Red,
+				0.3,
+				rl.Yellow,
 			)
 		}
 	}
-
 }

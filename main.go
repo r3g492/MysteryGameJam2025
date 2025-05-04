@@ -29,6 +29,7 @@ var (
 	lastEventTime time.Time
 	mouseRay      rl.Ray
 	hit           rl.Vector3
+	shootDir      rl.Vector3
 	modeClicked   bool
 )
 
@@ -81,7 +82,7 @@ func main() {
 
 	for !rl.WindowShouldClose() {
 		modeClicked = false
-		// TODO: delete
+
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
 		}
@@ -94,7 +95,6 @@ func main() {
 			continue
 		}
 
-		// todo: // game.StartCountdown(10) 를 넣기
 		if eventIdx == 0 && time.Since(gameStartTime) > 4*time.Second {
 			game.InputMessage("Hello?")
 			eventIdx++
@@ -130,12 +130,43 @@ func main() {
 		}
 
 		if eventIdx == 6 && time.Since(lastEventTime) > 6*time.Second {
-			eventIdx--
+			eventIdx = 5
+			lastEventTime = time.Now()
 		}
 
 		if eventIdx == 6 && currentProjectileType == MISSILE {
 			game.InputMessage("Good.")
 			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 7 && (time.Since(lastEventTime) > 4*time.Second) && currentProjectileType == MISSILE {
+			game.InputMessage("Left click to shoot.")
+			eventIdx++
+			lastEventTime = time.Now()
+			game.GenerateDrone(1)
+			alienRevealed = true
+		}
+
+		if eventIdx == 7 && time.Since(lastEventTime) > 30*time.Second && !game.EnemyAllDead() {
+			eventIdx--
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 8 && time.Since(lastEventTime) > 4*time.Second && game.EnemyAllDead() {
+			game.InputMessage("Well done.")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 9 && time.Since(lastEventTime) > 2*time.Second {
+			game.GenerateDrone(1)
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		for eventIdx >= 10 && time.Since(lastEventTime) > 2*time.Second {
+			game.GenerateDrone(1)
 			lastEventTime = time.Now()
 		}
 
@@ -157,19 +188,25 @@ func main() {
 		rl.ClearBackground(rl.RayWhite)
 		drawGradientSky(rl.Black, rl.LightGray)
 		rl.BeginMode3D(camera)
-		rl.DrawSphere(rl.Vector3{X: 5, Y: 5, Z: 0}, 0.5, rl.Red)
 		raylib.DrawEarth()
 		raylib.DrawMoon()
 		raylib.DrawSun()
 		raylib.DrawProjectile()
+		raylib.DrawDrones()
+		raylib.DrawExplosions()
+		dt := 1.0 / 60
+		raylib.UpdateExplosions(float32(dt))
 
-		getRayAndHit(camera)
-		if currentProjectileType == COMM {
-			showRay(rl.Green)
-		} else if currentProjectileType == MISSILE {
-			showRay(rl.Red)
+		if eventIdx >= 5 {
+			getRayAndHit(camera)
+			if currentProjectileType == COMM {
+				showRay(rl.Green)
+			} else if currentProjectileType == MISSILE {
+				showRay(rl.Yellow)
+			}
 		}
-		rl.DrawGrid(1000, 1)
+
+		// rl.DrawGrid(1000, 100)
 		rl.EndMode3D()
 
 		renderModeChangeButton(camera)
@@ -180,20 +217,43 @@ func main() {
 		}
 
 		renderMessage()
+		exX, exY, exZ, explosionHappens := game.ProjectileCheck()
+		if explosionHappens {
+			raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+		}
+		for explosionHappens {
+			exX, exY, exZ, explosionHappens = game.ProjectileCheck()
+			if explosionHappens {
+				raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+			}
+		}
+
+		exX, exY, exZ, explosionHappens = game.EarthCheck()
+		if explosionHappens {
+			raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+		}
+		for explosionHappens {
+			exX, exY, exZ, explosionHappens = game.EarthCheck()
+			if explosionHappens {
+				raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+			}
+		}
+
 		game.MoveProjectile()
-		if rl.IsMouseButtonPressed(rl.MouseButtonLeft) && !modeClicked {
+		if rl.IsMouseButtonPressed(rl.MouseButtonLeft) && !modeClicked && eventIdx >= 7 {
 			game.AddProjectile(
 				&game.Projectile{
 					PosX:       0,
 					PosY:       0,
 					PosZ:       0,
 					Type:       currentProjectileType,
-					DirectionX: mouseRay.Direction.X,
-					DirectionY: mouseRay.Direction.Y,
-					DirectionZ: mouseRay.Direction.Z,
-					Speed:      5,
+					DirectionX: shootDir.X,
+					DirectionY: shootDir.Y,
+					DirectionZ: shootDir.Z,
+					Speed:      1,
 				})
 		}
+		game.MoveDrone()
 		rl.EndDrawing()
 	}
 }
@@ -260,20 +320,33 @@ func renderModeChangeButton(camera rl.Camera3D) {
 	}
 }
 
-func getRayAndHit(
-	camera rl.Camera3D,
-) {
+func getRayAndHit(cam rl.Camera3D) {
 	mouse := rl.GetMousePosition()
-	mouseRay = rl.GetScreenToWorldRay(mouse, camera)
-	if mouseRay.Direction.Y != 0 {
-		t := -mouseRay.Position.Y / mouseRay.Direction.Y
-		if t > 0 {
-			hit = rl.Vector3{
-				X: mouseRay.Position.X + mouseRay.Direction.X*t,
-				Y: 0,
-				Z: mouseRay.Position.Z + mouseRay.Direction.Z*t,
-			}
-		}
+	mouseRay = rl.GetScreenToWorldRay(mouse, cam)
+
+	if mouseRay.Direction.Y == 0 {
+		return
+	}
+
+	t := -mouseRay.Position.Y / mouseRay.Direction.Y
+	if t <= 0 {
+		return
+	}
+
+	hit = rl.Vector3{
+		X: mouseRay.Position.X + mouseRay.Direction.X*t,
+		Y: 0,
+		Z: mouseRay.Position.Z + mouseRay.Direction.Z*t,
+	}
+
+	shootDir = rl.Vector3{X: hit.X, Y: hit.Y, Z: hit.Z}
+	length := float32(math.Sqrt(float64(shootDir.X*shootDir.X +
+		shootDir.Y*shootDir.Y +
+		shootDir.Z*shootDir.Z)))
+	if length != 0 {
+		shootDir.X /= length
+		shootDir.Y /= length
+		shootDir.Z /= length
 	}
 }
 
