@@ -2,6 +2,7 @@ package raylib
 
 import (
 	embedWrapper "MysteryGameJam2025/embed"
+	"MysteryGameJam2025/game"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 )
@@ -14,7 +15,7 @@ var (
 	sunSpinSpeed float32 = 1
 
 	sunOrbitDeg   float32 = 170
-	sunOrbitSpeed float32 = 0.1
+	sunOrbitSpeed float32 = 2
 	sunRadius     float32 = 20
 	sunOrbitRad   float32 = 100
 )
@@ -74,4 +75,21 @@ func GetSunCollision() (x float32, z float32, radius float32) {
 	radius = sunRadius
 
 	return x, z, radius
+}
+
+func SunCheck() bool {
+	x, z, radius := GetSunCollision()
+	for i := len(game.ProjectileList) - 1; i >= 0; i-- {
+		p := game.ProjectileList[i]
+
+		dx := p.PosX - x
+		dy := p.PosY - 0
+		dz := p.PosZ - z
+		if dx*dx+dy*dy+dz*dz <= radius*radius && p.Type == game.COMM {
+			game.ProjectileList = append(game.ProjectileList[:i], game.ProjectileList[i+1:]...)
+			game.SunComm = true
+			return true
+		}
+	}
+	return false
 }

@@ -13,34 +13,28 @@ import (
 )
 
 var (
-	screenWidth      float32 = 1600
-	screenHeight     float32 = 900
-	screenYaw        float32 = 0
-	screenPitch      float32 = 0
-	mouseSensitivity float32 = 0.001
-	alienRevealed    bool    = false
-
-	calmBgm       rl.Sound
-	battleBgm     rl.Sound
-	curBgm        *rl.Sound
-	gameState     int = START_MENU
-	gameStartTime time.Time
-	eventIdx      = 0
-	lastEventTime time.Time
-	mouseRay      rl.Ray
-	hit           rl.Vector3
-	shootDir      rl.Vector3
-	modeClicked   bool
+	screenWidth       float32 = 1600
+	screenHeight      float32 = 900
+	screenYaw         float32 = 0
+	screenPitch       float32 = 0
+	mouseSensitivity  float32 = 0.001
+	bgm               rl.Sound
+	gameState         int = START_MENU
+	gameStartTime     time.Time
+	eventIdx          = 0
+	lastEventTime     time.Time
+	mouseRay          rl.Ray
+	hit               rl.Vector3
+	shootDir          rl.Vector3
+	modeClicked       bool
+	whileCnt          int = 0
+	EarthHit          int = 0
+	EarthHitThreshold int = 10
 )
 
 const (
 	START_MENU = iota
-	BEGIN
-	FIRST_MESSAGE
-	ENEMY_APPEARS
-	ENEMY_DEFEATED
-	ALLY_APPEARS // comm을 외부로 날린 만큼 spawn 되서 옴
-	BETRAYAL_LAST_MESSAGE
+	IN_GAME
 )
 
 // projectile type
@@ -69,9 +63,9 @@ func main() {
 
 	setInitialTarget(player)
 	rl.InitAudioDevice()
-	calmBgm = embedWrapper.LoadSoundFromEmbedded("calm-space-music-312291.mp3")
-	battleBgm = embedWrapper.LoadSoundFromEmbedded("horror-tension-suspense-322304.mp3")
-	initBgm()
+	bgm = embedWrapper.LoadSoundFromEmbedded("horror-tension-suspense-322304.mp3")
+	explosionSound := embedWrapper.LoadSoundFromEmbedded("medium-explosion-40472.mp3")
+	sonarSound := embedWrapper.LoadSoundFromEmbedded("sonar-107581.mp3")
 
 	raylib.InitEarth()
 	defer raylib.UnloadEarth()
@@ -83,53 +77,55 @@ func main() {
 	for !rl.WindowShouldClose() {
 		modeClicked = false
 
-		if rl.IsKeyPressed(rl.KeyF5) {
-			alienRevealed = !alienRevealed
-		}
-
 		if gameState == START_MENU {
 			if renderStart() {
-				gameState = BEGIN
+				gameState = IN_GAME
 				gameStartTime = time.Now()
 			}
 			continue
 		}
 
-		if eventIdx == 0 && time.Since(gameStartTime) > 4*time.Second {
+		if eventIdx == 0 && time.Since(gameStartTime) > 1*time.Second {
 			game.InputMessage("Hello?")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
-		if eventIdx == 1 && time.Since(lastEventTime) > 4*time.Second {
+		if eventIdx == 1 && time.Since(lastEventTime) > 3*time.Second {
 			game.InputMessage("Hello??")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
-		if eventIdx == 2 && time.Since(lastEventTime) > 4*time.Second {
+		if eventIdx == 2 && time.Since(lastEventTime) > 3*time.Second {
 			game.InputMessage("I am a friend.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
-		if eventIdx == 3 && time.Since(lastEventTime) > 4*time.Second {
+		if eventIdx == 3 && time.Since(lastEventTime) > 3*time.Second {
 			game.InputMessage("They are coming.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
-		if eventIdx == 4 && time.Since(lastEventTime) > 4*time.Second {
+		if eventIdx == 4 && time.Since(lastEventTime) > 3*time.Second {
 			game.InputMessage("Prepare your weapon.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
-		if eventIdx == 5 && time.Since(lastEventTime) > 4*time.Second {
+		if eventIdx == 5 && time.Since(lastEventTime) > 3*time.Second {
 			game.InputMessage("Click the button below Earth.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
-		if eventIdx == 6 && time.Since(lastEventTime) > 6*time.Second {
+		if eventIdx == 6 && time.Since(lastEventTime) > 4*time.Second {
 			eventIdx = 5
 			lastEventTime = time.Now()
 		}
@@ -138,14 +134,20 @@ func main() {
 			game.InputMessage("Good.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
 		if eventIdx == 7 && (time.Since(lastEventTime) > 4*time.Second) && currentProjectileType == MISSILE {
 			game.InputMessage("Left click to shoot.")
 			eventIdx++
 			lastEventTime = time.Now()
-			game.GenerateDrone(1)
-			alienRevealed = true
+			game.GenerateDrone(1, 0.4)
+			rl.PlaySound(sonarSound)
+			rl.PlaySound(bgm)
+		}
+
+		if eventIdx > 7 && !rl.IsSoundPlaying(bgm) {
+			rl.PlaySound(bgm)
 		}
 
 		if eventIdx == 7 && time.Since(lastEventTime) > 30*time.Second && !game.EnemyAllDead() {
@@ -157,29 +159,128 @@ func main() {
 			game.InputMessage("Well done.")
 			eventIdx++
 			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
 		}
 
-		if eventIdx == 9 && time.Since(lastEventTime) > 2*time.Second {
-			game.GenerateDrone(1)
-			eventIdx++
+		if eventIdx == 9 && eventIdx <= 10 && time.Since(lastEventTime) > 2*time.Second {
+			game.GenerateDrone(1, 0.4)
+			eventIdx = 10
 			lastEventTime = time.Now()
 		}
 
-		for eventIdx >= 10 && time.Since(lastEventTime) > 2*time.Second {
-			game.GenerateDrone(1)
+		for eventIdx == 10 && time.Since(lastEventTime) > 3*time.Second {
+			game.InputMessage("They are invaders ...")
+			eventIdx = 11
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		for eventIdx == 11 && time.Since(lastEventTime) > 3*time.Second {
+			game.InputMessage("For me to help you ...")
+			eventIdx = 12
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		for eventIdx == 12 && time.Since(lastEventTime) > 3*time.Second {
+			game.InputMessage("Send COMM to the moon.")
+			eventIdx = 13
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 13 && time.Since(lastEventTime) > 6*time.Second && currentProjectileType != COMM {
+			eventIdx = 12
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx >= 13 {
+			raylib.MoonCheck()
+		}
+
+		if eventIdx == 13 && game.MoonComm {
+			game.InputMessage("Good.")
+			eventIdx = 14
+			lastEventTime = time.Now()
+			whileCnt = 10
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 14 && time.Since(lastEventTime) > 3*time.Second {
+			game.GenerateDrone(2, 0.4)
+			if whileCnt > 0 {
+				whileCnt--
+			} else {
+				eventIdx = 15
+			}
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 15 && time.Since(lastEventTime) > 3*time.Second {
+			game.InputMessage("It's not enough ...")
+			eventIdx = 16
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx >= 15 {
+			raylib.SunCheck()
+		}
+
+		if eventIdx == 16 && time.Since(lastEventTime) > 3*time.Second {
+			game.InputMessage("Send COMM to The Sun!")
+			eventIdx = 17
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 17 && time.Since(lastEventTime) > 4*time.Second && game.SunComm {
+			game.InputMessage("Now ...")
+			eventIdx = 18
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 18 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("I have ...")
+			eventIdx = 19
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 19 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("found you.")
+			eventIdx = 20
+			lastEventTime = time.Now()
+			rl.PlaySound(sonarSound)
+		}
+
+		if eventIdx == 20 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("This is the last message.")
+			eventIdx = 21
+			lastEventTime = time.Now()
+			game.StartCountdown(60)
+		}
+
+		if eventIdx >= 21 && !game.DroneTurn {
+			if game.CommCheck() {
+				game.TurnDrone()
+				game.InputMessage("No!!!")
+			}
+		}
+
+		if eventIdx == 21 && time.Since(lastEventTime) > 4*time.Second {
+			game.GenerateDrone(24, 1)
+			eventIdx = 21
 			lastEventTime = time.Now()
 		}
 
 		if isGameEnded() || game.IsCountdownFinished() {
-			alienRevealed = false
-			updateBgm(alienRevealed)
 			if renderEnd() {
 				return
 			}
 			continue
 		}
-
-		updateBgm(alienRevealed)
 
 		camera := updateCamera()
 
@@ -206,7 +307,10 @@ func main() {
 			}
 		}
 
-		// rl.DrawGrid(1000, 100)
+		if eventIdx > 19 {
+			raylib.DrawDemon()
+		}
+
 		rl.EndMode3D()
 
 		renderModeChangeButton(camera)
@@ -220,22 +324,36 @@ func main() {
 		exX, exY, exZ, explosionHappens := game.ProjectileCheck()
 		if explosionHappens {
 			raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+			rl.PlaySound(explosionSound)
 		}
 		for explosionHappens {
 			exX, exY, exZ, explosionHappens = game.ProjectileCheck()
 			if explosionHappens {
 				raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+				rl.PlaySound(explosionSound)
 			}
 		}
 
 		exX, exY, exZ, explosionHappens = game.EarthCheck()
 		if explosionHappens {
 			raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+			rl.PlaySound(explosionSound)
+			EarthHit++
+			raylib.AddEarthHit(EarthHitThreshold)
+			if EarthHit >= EarthHitThreshold {
+				game.EarthHealth = 0
+			}
 		}
 		for explosionHappens {
 			exX, exY, exZ, explosionHappens = game.EarthCheck()
 			if explosionHappens {
 				raylib.AddExplosion(rl.Vector3{X: exX, Y: exY, Z: exZ})
+				rl.PlaySound(explosionSound)
+				EarthHit++
+				raylib.AddEarthHit(EarthHitThreshold)
+				if EarthHit >= EarthHitThreshold {
+					game.EarthHealth = 0
+				}
 			}
 		}
 
@@ -252,6 +370,11 @@ func main() {
 					DirectionZ: shootDir.Z,
 					Speed:      1,
 				})
+			if currentProjectileType == MISSILE {
+				rl.PlaySound(explosionSound)
+			} else {
+				rl.PlaySound(sonarSound)
+			}
 		}
 		game.MoveDrone()
 		rl.EndDrawing()
@@ -483,25 +606,5 @@ func drawGradientSky(topColor, bottomColor rl.Color) {
 			A: 255,
 		}
 		rl.DrawLine(0, i, width, i, color)
-	}
-}
-
-func initBgm() {
-	curBgm = &calmBgm
-	rl.PlaySound(*curBgm)
-}
-
-func updateBgm(alienRevealed bool) {
-	want := &calmBgm
-	if alienRevealed {
-		want = &battleBgm
-	}
-
-	if want != curBgm {
-		rl.StopSound(*curBgm)
-		curBgm = want
-		rl.PlaySound(*curBgm)
-	} else if !rl.IsSoundPlaying(*curBgm) {
-		rl.PlaySound(*curBgm)
 	}
 }

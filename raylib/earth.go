@@ -11,9 +11,10 @@ var (
 	earthModel   rl.Model
 	earthTexture rl.Texture2D
 
-	earthRot      float32 = 0                // current angle in degrees
-	earthRotSpeed float32 = 10               // °/sec – tweak to taste
-	axisY                 = rl.Vector3{Y: 1} // (0,1,0) – spin around Y
+	earthRot      float32 = 0
+	earthRotSpeed float32 = 10
+	axisY                 = rl.Vector3{Y: 1}
+	earthDamage   float32 = 0
 )
 
 func InitEarth() {
@@ -45,11 +46,23 @@ func UnloadEarth() {
 
 func DrawEarth() {
 	earthRot += earthRotSpeed * rl.GetFrameTime()
-	if earthRot >= 360 { // keep the value small
+	if earthRot >= 360 {
 		earthRot -= 360
 	}
+
+	g := uint8(255 * (1 - earthDamage))
+	b := g
+	tint := rl.Color{R: 255, G: g, B: b, A: 255}
+
 	pos := rl.Vector3{X: game.EarthPositionX, Y: game.EarthPositionY, Z: game.EarthPositionZ}
 	scale := rl.Vector3{X: 1, Y: 1, Z: 1}
+	rl.DrawModelEx(earthModel, pos, axisY, earthRot, scale, tint)
+}
 
-	rl.DrawModelEx(earthModel, pos, axisY, earthRot, scale, rl.White)
+func AddEarthHit(threshold int) {
+	step := 1.0 / float32(threshold)
+	earthDamage += step
+	if earthDamage > 1 {
+		earthDamage = 1
+	}
 }

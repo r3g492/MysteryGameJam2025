@@ -2,6 +2,7 @@ package raylib
 
 import (
 	embedWrapper "MysteryGameJam2025/embed"
+	"MysteryGameJam2025/game"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 )
@@ -14,7 +15,7 @@ var (
 	moonSpinSpeed float32 = 10
 
 	moonOrbitDeg   float32 = 0
-	moonOrbitSpeed float32 = 1
+	moonOrbitSpeed float32 = 4
 	moonRadius     float32 = 1
 	moonOrbitRad   float32 = 20
 )
@@ -74,4 +75,21 @@ func GetMoonCollision() (x float32, z float32, radius float32) {
 	radius = moonRadius
 
 	return x, z, radius
+}
+
+func MoonCheck() bool {
+	x, z, radius := GetMoonCollision()
+	for i := len(game.ProjectileList) - 1; i >= 0; i-- {
+		p := game.ProjectileList[i]
+
+		dx := p.PosX - x
+		dy := p.PosY - 0
+		dz := p.PosZ - z
+		if dx*dx+dy*dy+dz*dz <= (radius+2)*(radius+2) && p.Type == game.COMM {
+			game.ProjectileList = append(game.ProjectileList[:i], game.ProjectileList[i+1:]...)
+			game.MoonComm = true
+			return true
+		}
+	}
+	return false
 }
