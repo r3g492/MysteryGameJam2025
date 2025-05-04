@@ -259,7 +259,7 @@ func main() {
 			game.InputMessage("This is the last message.")
 			eventIdx = 21
 			lastEventTime = time.Now()
-			game.StartCountdown(60)
+			game.StartCountdown(30)
 		}
 
 		if eventIdx >= 21 && !game.DroneTurn {
