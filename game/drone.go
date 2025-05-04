@@ -29,6 +29,10 @@ func GenerateDrone(
 	howMany int,
 	speed float32,
 ) {
+	if DroneTurn {
+		return
+	}
+
 	const (
 		minRadius = 300.0
 		maxRadius = 400.0
