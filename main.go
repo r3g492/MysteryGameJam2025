@@ -23,17 +23,18 @@ var (
 	calmBgm   rl.Sound
 	battleBgm rl.Sound
 	curBgm    *rl.Sound
-	atStart   bool = true
+	gameState int = START_MENU
 )
 
 // START game state
 const (
-	START = iota
-	LAST_MESSAGE
+	START_MENU = iota
+	BEGIN
+	FIRST_MESSAGE
 	ENEMY_APPEARS
 	ENEMY_DEFEATED
 	ALLY_APPEARS // comm을 외부로 날린 만큼 spawn 되서 옴
-	BETRAYAL
+	BETRAYAL_LAST_MESSAGE
 )
 
 // projectile type
@@ -78,9 +79,11 @@ func main() {
 			alienRevealed = !alienRevealed
 		}
 
-		if atStart {
+		if gameState == START_MENU {
 			if renderStart() {
-				atStart = false
+				gameState = BEGIN
+				game.StartCountdown(10)
+				game.InputMessage("Are you there?")
 			}
 			continue
 		}
@@ -122,14 +125,36 @@ func main() {
 
 		renderModeChangeButton(camera)
 
-		game.StartCountdown(5)
 		if game.CountDownBegin {
 			secs := game.GetCountdown()
 			rl.DrawText("Survive "+strconv.Itoa(secs)+"s", int32(screenWidth/2-50), int32(screenHeight/2-50), 10, rl.RayWhite)
 		}
 
+		renderMessage()
+
 		rl.EndDrawing()
 	}
+}
+
+func renderMessage() {
+	msg, show, remaining := game.MessageResponse()
+	if !show {
+		return
+	}
+	alpha := float32(remaining) / float32(game.MessageDuration*1000)
+	if alpha < 0 {
+		alpha = 0
+	} else if alpha > 1 {
+		alpha = 1
+	}
+
+	fontSize := int32(100)
+	textWidth := rl.MeasureText(msg, fontSize)
+	midX := int32(screenWidth/2) - textWidth/2
+	midY := int32(screenHeight/2) - fontSize/2 - 200
+
+	faded := rl.Fade(rl.White, alpha)
+	rl.DrawText(msg, midX, midY, fontSize, faded)
 }
 
 func renderModeChangeButton(camera rl.Camera3D) {
