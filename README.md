@@ -3,6 +3,8 @@
 simple and short 3d game.
 under 10 minute playtime.
 
+at /out , there're executable files for windows and linux.
+
 
 external sources: 
 https://pixabay.com/sound-effects/medium-explosion-40472/
