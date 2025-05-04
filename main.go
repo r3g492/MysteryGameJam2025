@@ -6,10 +6,10 @@ import (
 	"MysteryGameJam2025/game"
 	gameMath "MysteryGameJam2025/math"
 	"MysteryGameJam2025/raylib"
-	"fmt"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"math"
 	"strconv"
+	"time"
 )
 
 var (
@@ -20,13 +20,18 @@ var (
 	mouseSensitivity float32 = 0.001
 	alienRevealed    bool    = false
 
-	calmBgm   rl.Sound
-	battleBgm rl.Sound
-	curBgm    *rl.Sound
-	gameState int = START_MENU
+	calmBgm       rl.Sound
+	battleBgm     rl.Sound
+	curBgm        *rl.Sound
+	gameState     int = START_MENU
+	gameStartTime time.Time
+	eventIdx      = 0
+	lastEventTime time.Time
+	mouseRay      rl.Ray
+	hit           rl.Vector3
+	modeClicked   bool
 )
 
-// START game state
 const (
 	START_MENU = iota
 	BEGIN
@@ -75,6 +80,8 @@ func main() {
 	defer raylib.UnloadSun()
 
 	for !rl.WindowShouldClose() {
+		modeClicked = false
+		// TODO: delete
 		if rl.IsKeyPressed(rl.KeyF5) {
 			alienRevealed = !alienRevealed
 		}
@@ -82,10 +89,54 @@ func main() {
 		if gameState == START_MENU {
 			if renderStart() {
 				gameState = BEGIN
-				game.StartCountdown(10)
-				game.InputMessage("Are you there?")
+				gameStartTime = time.Now()
 			}
 			continue
+		}
+
+		// todo: // game.StartCountdown(10) 를 넣기
+		if eventIdx == 0 && time.Since(gameStartTime) > 4*time.Second {
+			game.InputMessage("Hello?")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+		if eventIdx == 1 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("Hello??")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+		if eventIdx == 2 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("I am a friend.")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 3 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("They are coming.")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 4 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("Prepare your weapon.")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 5 && time.Since(lastEventTime) > 4*time.Second {
+			game.InputMessage("Click the button below Earth.")
+			eventIdx++
+			lastEventTime = time.Now()
+		}
+
+		if eventIdx == 6 && time.Since(lastEventTime) > 6*time.Second {
+			eventIdx--
+		}
+
+		if eventIdx == 6 && currentProjectileType == MISSILE {
+			game.InputMessage("Good.")
+			eventIdx++
+			lastEventTime = time.Now()
 		}
 
 		if isGameEnded() || game.IsCountdownFinished() {
@@ -110,17 +161,15 @@ func main() {
 		raylib.DrawEarth()
 		raylib.DrawMoon()
 		raylib.DrawSun()
+		raylib.DrawProjectile()
 
+		getRayAndHit(camera)
 		if currentProjectileType == COMM {
-			showRay(camera, rl.Green)
+			showRay(rl.Green)
 		} else if currentProjectileType == MISSILE {
-			showRay(camera, rl.Red)
+			showRay(rl.Red)
 		}
-
-		if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-			fmt.Println("fire shot")
-		}
-
+		rl.DrawGrid(1000, 1)
 		rl.EndMode3D()
 
 		renderModeChangeButton(camera)
@@ -131,7 +180,20 @@ func main() {
 		}
 
 		renderMessage()
-
+		game.MoveProjectile()
+		if rl.IsMouseButtonPressed(rl.MouseButtonLeft) && !modeClicked {
+			game.AddProjectile(
+				&game.Projectile{
+					PosX:       0,
+					PosY:       0,
+					PosZ:       0,
+					Type:       currentProjectileType,
+					DirectionX: mouseRay.Direction.X,
+					DirectionY: mouseRay.Direction.Y,
+					DirectionZ: mouseRay.Direction.Z,
+					Speed:      5,
+				})
+		}
 		rl.EndDrawing()
 	}
 }
@@ -187,7 +249,7 @@ func renderModeChangeButton(camera rl.Camera3D) {
 			mp := rl.GetMousePosition()
 			if mp.X >= float32(bx) && mp.X <= float32(bx+bw) &&
 				mp.Y >= float32(by) && mp.Y <= float32(by+bh) {
-
+				modeClicked = true
 				if currentProjectileType == COMM {
 					currentProjectileType = MISSILE
 				} else {
@@ -198,28 +260,32 @@ func renderModeChangeButton(camera rl.Camera3D) {
 	}
 }
 
-func showRay(
+func getRayAndHit(
 	camera rl.Camera3D,
-	rayColor rl.Color,
 ) {
 	mouse := rl.GetMousePosition()
-	ray := rl.GetScreenToWorldRay(mouse, camera)
-	if ray.Direction.Y != 0 {
-		t := -ray.Position.Y / ray.Direction.Y
+	mouseRay = rl.GetScreenToWorldRay(mouse, camera)
+	if mouseRay.Direction.Y != 0 {
+		t := -mouseRay.Position.Y / mouseRay.Direction.Y
 		if t > 0 {
-			hit := rl.Vector3{
-				X: ray.Position.X + ray.Direction.X*t,
+			hit = rl.Vector3{
+				X: mouseRay.Position.X + mouseRay.Direction.X*t,
 				Y: 0,
-				Z: ray.Position.Z + ray.Direction.Z*t,
+				Z: mouseRay.Position.Z + mouseRay.Direction.Z*t,
 			}
-			rl.DrawLine3D(
-				rl.Vector3{X: 0, Y: 0, Z: 0},
-				hit,
-				rayColor,
-			)
-			rl.DrawSphere(hit, 0.3, rl.Yellow)
 		}
 	}
+}
+
+func showRay(
+	rayColor rl.Color,
+) {
+	rl.DrawLine3D(
+		rl.Vector3{X: 0, Y: 0, Z: 0},
+		hit,
+		rayColor,
+	)
+	rl.DrawSphere(hit, 0.3, rl.Yellow)
 }
 
 func renderStart() bool {
@@ -349,22 +415,20 @@ func drawGradientSky(topColor, bottomColor rl.Color) {
 
 func initBgm() {
 	curBgm = &calmBgm
-	rl.PlaySound(*curBgm) // start with the calm theme
+	rl.PlaySound(*curBgm)
 }
 
 func updateBgm(alienRevealed bool) {
-	// decide which track we *should* be on
 	want := &calmBgm
 	if alienRevealed {
 		want = &battleBgm
 	}
 
-	// did we switch state?
 	if want != curBgm {
-		rl.StopSound(*curBgm) // stop the old one
+		rl.StopSound(*curBgm)
 		curBgm = want
-		rl.PlaySound(*curBgm) // and start the new one
+		rl.PlaySound(*curBgm)
 	} else if !rl.IsSoundPlaying(*curBgm) {
-		rl.PlaySound(*curBgm) // restart if it finished (manual “loop”)
+		rl.PlaySound(*curBgm)
 	}
 }
